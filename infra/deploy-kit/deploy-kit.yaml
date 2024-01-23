@@ -1,0 +1,50 @@
+binary:
+  releaseRing: Stable
+release:
+  environments:
+    - Stage
+  regions:
+    - UsWest2
+    - ApSoutheast2
+  namespace: example-service
+  serviceCatalogFilePath: .cortex/catalog/example-service.yaml
+service:
+  components:
+    - containerImage: "TODO: fill in with your built image"
+      resources:
+        limits:
+          memory: 256Mi
+        requests:
+          cpu: 50m
+          memory: 128Mi
+      releaseSettings:
+        releaseType: Canary
+        steps:
+          - setWeight: 50
+          - pause:
+              duration: 10s
+      resilience:
+        disruptionTolerance:
+          replicasUnavailable: 1
+        scaling:
+          metrics:
+            - type: Resource
+              resource:
+                target:
+                  type: AverageValue
+                  averageUtilization: 80
+                name:  cpu
+          replicas:
+            maximum: 6
+            minimum: 2
+          scalingType: Hpa
+        shutdownBehaviour:
+          terminationDrainDuration: 30s
+          terminationGracePeriodSeconds: 30
+        spread:
+          - maxSkew: 2
+            strategy: ReplicasNotInSameAvailabilityZone
+            whenUnsatisfiable: ScheduleAnyway
+      security:
+        roleBasedAccess:
+          roleId: test

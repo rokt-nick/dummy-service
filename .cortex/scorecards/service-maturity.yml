@@ -1,0 +1,127 @@
+description: "Scorecard assesses the maturity of the service and
+  operational excellence of the team owning this service."
+name: Service Maturity
+rules:
+  - description:
+      "__Description__: This service has an on-call schedule setup in Opsgenie and thus
+      always has at least one person to receive incident pages and respond to them"
+    expression: oncall != null
+    failureMessage:
+      "__Remediation__: Visit [How To Setup Datadog and OpsGenie Integration for
+      Alerting](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/1268121784/How+To+Setup+Datadog+and+OpsGenie+Integration+for+Alerting)
+      to setup monitor and alerts for the service"
+    level: Bronze
+    title: Has on-call responder
+    weight: 1
+  - description: "__Description__: Whether this service has regular deployments or not?"
+    expression: deploys(lookback=duration("P7D"),types=["DEPLOY"]).count > 0
+    failureMessage: "__Remediation__: Regular deployment is a an indication of active development cycles. The more you deploy the better the sync between code base and production service. As a general rule we recommend frequent deployments."
+    level: Gold
+    title: Was deployed to production within last 7 Days
+    weight: 1
+  - description: "__Description__: Whether the changes are frequently pushed to the repository or not"
+    expression: git.lastCommit.freshness < duration("P7D")
+    failureMessage: "__Remediation__: More frequent pushes help keep the code at remote in sync with local. As a result help recover large portion of codes if anything happens to your local."
+    level: Diamond
+    title: Changes were committed to repository within last 7 days
+    weight: 1
+  - description: "__Description__: Architectural design decisions are logged in docs/decisions location for future reference."
+    expression: git.code_search(file_extension = "md", path = "docs/decisions/").count > 1
+    failureMessage: "__Remediation__: Regular commits is a an indication of active development cycles. As a general rule we recommend frequent commits to keep the local and remove code in sync."
+    level: Silver
+    title: Has decision history saved in standard location
+    weight: 1
+  - description: "__Description__: Service is passing all SLO checks."
+    expression: slos.count > 0 and slos.passing
+    failureMessage: "__Remediation__: Visit https://rokt.datadoghq.com/slo/manage to find out which SLOs are failing. We have an obligation to meet our SLOs. If needed support, reach out to SRE to workout the correct SLO for your service."
+    level: Silver
+    title: All SLOs are passing
+    weight: 1
+  - description: "__Description__: The ratio of rollbacks to deployments within the last 1 month"
+    expression: deploys(lookback=duration("P1M"),types=["ROLLBACK"]).count /
+      (deploys(lookback=duration("P1M"),types=["DEPLOY"]).count ) < 0.05
+    failureMessage: "__Remediation__: Too many rollbacks can surface other underlying issue and lack of proper pull request review, grooming tickets before they are implemented, or vague acceptance criteria, etc. "
+    level: Bronze
+    title: Ratio of rollbacks to deploys is less than 5%
+    weight: 1
+  - description: "__Description__: The ratio of rollbacks to deployments within the last 1 month"
+    expression: deploys(lookback=duration("P1M"),types=["ROLLBACK"]).count /
+      (deploys(lookback=duration("P1M"),types=["DEPLOY"]).count ) < 0.02
+    failureMessage: "__Remediation__: Too many rollbacks can surface other underlying issue and lack of proper pull request review, grooming tickets before they are implemented, or vague acceptance criteria, etc. "
+    level: Silver
+    title: Ratio of rollbacks to deploys is less than 2%
+    weight: 1
+  - description: "__Description__: The ratio of rollbacks to deployments within the last 1 month"
+    expression: deploys(lookback=duration("P1M"),types=["ROLLBACK"]).count /
+      (deploys(lookback=duration("P1M"),types=["DEPLOY"]).count  ) < 0.01
+    failureMessage: "__Remediation__: Too many rollbacks can surface other underlying issue and lack of proper pull request review, grooming tickets before they are implemented, or vague acceptance criteria, etc. "
+    level: Gold
+    title: Ratio of rollbacks to deploys is less than 1%
+    weight: 1
+  - description: "__Description__: The ratio of rollbacks to deployments within the last 1 month"
+    expression: deploys(lookback=duration("P1M"),types=["ROLLBACK"]).count /
+      (deploys(lookback=duration("P1M"),types=["DEPLOY"]).count  ) < 0.005
+    failureMessage: "__Remediation__: Too many rollbacks can surface other underlying issue and lack of proper pull request review, grooming tickets before they are implemented, or vague acceptance criteria, etc. "
+    level: Diamond
+    title: Ratio of rollbacks to deploys is less than 0.5%
+    weight: 1
+  - description: "__Description__: The ratio of incidents to deployments within the last 1 month"
+    expression:
+      'oncall.alerts(lookback=duration("P1M"),query="status: open").count
+      / (deploys(lookback=duration("P1M"),types=["DEPLOY"]).count ) < 0.02'
+    failureMessage: "__Remediation__: Too many incidents can surface other underlying issue such as teams not learning from the mistakes of previous incidents, or may the system architecture needs a revamp, etc."
+    level: Bronze
+    title: Ratio of incidents to deploys is less than 2%
+    weight: 1
+  - description: "__Description__: The ratio of incidents to deployments within the last 1 month"
+    expression:
+      'oncall.alerts(lookback=duration("P1M"),query="status: open").count
+      / (deploys(lookback=duration("P1M"),types=["DEPLOY"]).count ) < 0.01'
+    failureMessage: "__Remediation__: Too many incidents can surface other underlying issue such as teams not learning from the mistakes of previous incidents, or may the system architecture needs a revamp, etc."
+    level: Silver
+    title: Ratio of incidents to deploys is less than 1%
+    weight: 1
+  - description: "__Description__: The ratio of incidents to deployments within the last 1 month"
+    expression:
+      'oncall.alerts(lookback=duration("P1M"),query="status: open").count
+      / (deploys(lookback=duration("P1M"),types=["DEPLOY"]).count ) < 0.001'
+    failureMessage: "__Remediation__: Too many incidents can surface other underlying issue such as teams not learning from the mistakes of previous incidents, or may the system architecture needs a revamp, etc."
+    level: Gold
+    title: Ratio of incidents to deploys is less than 0.1%
+    weight: 1
+  - description: "__Description__: The ratio of incidents to deployments within the last 1 month"
+    expression:
+      'oncall.alerts(lookback=duration("P1M"),query="status: open").count
+      / (deploys(lookback=duration("P1M"),types=["DEPLOY"]).count ) < 0.0001'
+    failureMessage: "__Remediation__: Too many incidents can surface other underlying issue such as teams not learning from the mistakes of previous incidents, or may the system architecture needs a revamp, etc."
+    level: Diamond
+    title: Ratio of incidents to deploys is less than 0.01%
+    weight: 1
+  - description: "__Description__: Should be at least at gold standard in production readiness"
+    expression: 'custom("score/production-readiness") >= 3'
+    failureMessage: "__Remediation__: It seems that the service is not at gold standard in production readiness scorecard. Recommendation is to follow the production readiness scorecard and remedy the situation(s)."
+    level: Bronze
+    title: "Service meets all expectations to be production ready"
+    weight: 1
+tag: service-maturity
+draft: false
+ladder:
+  levels:
+    - color: "#af6d30"
+      description: null
+      name: Bronze
+      rank: 1
+    - color: "#b6b6b6"
+      description: null
+      name: Silver
+      rank: 2
+    - color: "#f2cc00"
+      description: null
+      name: Gold
+      rank: 3
+    - color: "#e5eaee"
+      description: null
+      name: Diamond
+      rank: 4
+filter:
+  category: SERVICE

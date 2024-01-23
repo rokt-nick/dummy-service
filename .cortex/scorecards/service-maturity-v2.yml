@@ -1,0 +1,402 @@
+tag: service-maturity-v2
+name: Service Maturity (v2)
+draft: false
+ladder:
+  name: Default Ladder
+  levels:
+    - name: Aspirational
+      description: |
+        Aspirational standards are standards that we would like to include in the future but are not currently measured.
+        They are included to provide a guide to teams on where we might be heading in the future.
+      rank: 5
+      color: "#e5eaee"
+    - name: Gold
+      description: |
+        Gold level maturity is the highest level of software service maturity, all services should aspire to this level.
+        Services at this level are highly observable, efficient and reliable.
+        They are tolerant to multiple regional failures and consistently meet best practices in operational excellence, disaster recovery and security.
+        Understanding and accuracy of key business metrics is well understood that we can accurately forecast forward 4Q growth.
+      rank: 4
+      color: "#f2cc00"
+    - name: Silver
+      description: |
+        Silver level maturity represents a significant improvement over bronze level maturity but there is still room for improvement in many areas.
+        A service at this level is highly reliable and tolerant to a single region failure with no degradation to the service’s features.
+        Deployments that result in an incident are rare. Good configuration change practices are followed and feature branches are completely tested before merging.
+      rank: 3
+      color: "#b6b6b6"
+    - name: Bronze
+      description: |
+        Bronze level maturity is the minimum level of standard for any service to go live and serve traffic on production.
+        A service at this level can release without the need to coordinate with other services and minimal deployments result in an incident.
+        The service is regionally isolated and only relies on dependencies in the same region.
+        They are tolerant to host and zone failures, best practices have been established but not yet embedded.
+      rank: 2
+      color: "#af6d30"
+    - name: Beginner
+      description: |
+        Beginner level maturity is below our minimum level of quality and reliability.
+        Services at this level are in their early development phase and should be focusing on uplifting itself, they should not be deployed to production.
+      rank: 1
+      color: "#FF10F0"
+rules:
+  - title: The `service` tag is defined on the service’s infrastructure.
+    description: "__Description__: The `service` label enables us to match a resource to its service and is required by Datadog for Unified Service Tagging."
+    failureMessage: "__Remediation__: Add the `service` label to the resource's K8s, Terraform or CloudFormation definitions, see [Documentation](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/1268416987/Tags+Labels)"
+    expression: k8s = null or k8s.metadata.has_label("service") and (jq(k8s.spec, ".[].template.metadata.labels.service") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels.service") != null)
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: The `service-group` tag is defined on the service’s infrastructure.
+    description: "__Description__: The `service-group` enables us to match a resource to its service group."
+    failureMessage: "__Remediation__: Add the `service-group` label to the resource's K8s, Terraform or CloudFormation definitions, see [Documentation](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/1268416987/Tags+Labels)"
+    expression: k8s = null or k8s.metadata.has_label("service-group") and (jq(k8s.spec, ".[].template.metadata.labels[\"service-group\"]") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels[\"service-group\"]") != null)
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: The `version` tag is defined on the service’s infrastructure.
+    description: "__Description__: The `version` label is recommended by Istio and is required by Datadog for Unified Service Tagging."
+    failureMessage: "__Remediation__: Add the `version` label to the resource's K8s, Terraform or CloudFormation definitions, see [Documentation](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/1268416987/Tags+Labels)"
+    expression: k8s = null or k8s.metadata.has_label("version") and (jq(k8s.spec, ".[].template.metadata.labels.version") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels.version") != null)
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: The `team` tag is defined on the service’s infrastructure.
+    description: "__Description__: The `team` label enables us to identify the owners of a resource."
+    failureMessage: "__Remediation__: Add the `team` label to the resource's K8s, Terraform or CloudFormation definitions, see [Documentation](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/1268416987/Tags+Labels)"
+    expression: k8s = null or k8s.metadata.has_label("team") and (jq(k8s.spec, ".[].template.metadata.labels.team") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels.team") != null)
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: The `git.repository_url` tag is defined on the service’s infrastructure.
+    description: "__Description__: The `git.repository_url` label helps us to keep track of where the source code for each service resides."
+    failureMessage: "__Remediation__: Add the `git.repository_url` label to the resource's K8s, Terraform or CloudFormation definitions, see [Documentation](https://docs.google.com/document/d/1tg0Tx0y77QTnG5Z0qbm2O3raKNynw4jhhE-ZDUW4wYg"
+    expression: k8s = null or k8s.metadata.has_label("git.repository_url") and (jq(k8s.spec, ".[].template.metadata.labels.\"git.repository_url\"") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels.\"git.repository_url\"") != null)
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: The `git.commit.sha` tag is defined on the service’s infrastructure.
+    description: "__Description__: The `git.commit.sha` label helps us to keep track of which commit was used to generate the current version of a service."
+    failureMessage: "__Remediation__: Add the `git.commit.sha` label to Kubernetes resources definitions, see [Documentation](https://docs.google.com/document/d/1tg0Tx0y77QTnG5Z0qbm2O3raKNynw4jhhE-ZDUW4wYg"
+    expression: k8s = null or k8s.metadata.has_label("git.commit.sha") and (jq(k8s.spec, ".[].template.metadata.labels.\"git.commit.sha\"") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels.\"git.commit.sha\"") != null)
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+      query: '!groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")'
+
+  - title: The `git.branch` tag is defined on the service’s infrastructure.
+    description: "__Description__: The `git.branch` label helps us to keep track of which branch was used to generate a given version of a service."
+    failureMessage: "__Remediation__: Add the `git.branch` label to Kubernetes resources definitions, see [Documentation](https://docs.google.com/document/d/1tg0Tx0y77QTnG5Z0qbm2O3raKNynw4jhhE-ZDUW4wYg"
+    expression: k8s = null or k8s.metadata.has_label("git.branch") and (jq(k8s.spec, ".[].template.metadata.labels.\"git.branch\"") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels.\"git.branch\"") != null)
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+      query: '!groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")'
+
+  - title: The `app` tag is defined on the service’s infrastructure.
+    description: "__Description__: The `app` label is required by Istio for added context on metrics and traces."
+    failureMessage: "__Remediation__: Add the `app` label to Kubernetes resources definitions, see [Documentation](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/1268416987/Tags+Labels)"
+    expression: k8s.metadata.has_label("app") and (jq(k8s.spec, ".[].template.metadata.labels.app") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels.app") != null)
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+      query: '!groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")'
+
+  - title: The purpose of the service within the Rokt platform is documented in a clear and concise way in a README.md or docs/README.md.
+    description: "__Description__: Documenting the purpose of each service helps promote wider understanding of the platform and helps with onboarding new engineers."
+    failureMessage: "__Remediation__: Ensure that the README file exists and clearly articulates the purpose and effect of the service."
+    expression: git.fileContents("README.md").length > 100 or git.fileContents("docs/README.md").length > 100
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: The purpose within the Rokt platform of the service is documented in a clear and concise way in a README.md or docs/README.md.
+    description: "__Description__: Clearly defining the owners of each service helps other teams understand the service's organisational context and who is responsible for its operation."
+    failureMessage: "__Remediation__: Ensure that the Engineering Manager, Product Owner and GTM Owner of the service is documented (or a link to this information is provided) in the service readme file under the heading 'Experts' or 'Owners'."
+    expression: (git.fileExists("README.md") and git.fileContents("README.md").matches("(?im)^#{1,6}\s*(Experts|Owners)")) or (git.fileExists("docs/README.md") and git.fileContents("docs/README.md").matches("(?im)^#{1,6}\s*(Experts|Owners)"))
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: Local development setup and development process is defined in docs/development.md.
+    description: "__Description__: A development.md file helps to provide an overview of how to develop the service including information on dependencies, environment setup, running test and linting, common issues, etc."
+    failureMessage: "__Remediation__: Add a `development.md` file to your service's root directory or in the `docs` child directory."
+    expression: (git.fileExists("development.md") and git.fileContents("development.md").length > 100) OR (git.fileExists("docs/development.md") and git.fileContents("docs/development.md").length > 100)
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: GitHub is used as the Version Control System to manage code changes.
+    description: "__Description__: GitHub is Rokt's chosen source code repository; all services should be added to the ROKT organisation in GitHub."
+    failureMessage: "__Remediation__: Add your service to GitHub in the ROKT organisation."
+    expression: git != null
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: Github CODEOWNERS are configured for repo in .github/CODEOWNERS and are required to review PRs.
+    description: "__Description__: Requiring review by CODEOWNERS is important for ensuring that changes to the most critical branch of a repository are reviewed and approved by the appropriate individuals or teams before being merged."
+    failureMessage: "__Remediation__: Configure your GitHub repository per the [documented best practice](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/2089451744/Best+Practices+For+GitHub+Repository+Configurations)."
+    expression: git.branch_protection().code_owner_reviews_required
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: Metrics exposed by the service are documented in docs/operations.md.
+    description: "__Description__: Documenting metrics helps engineers understand what's available and where to look to understand system behaviour or troubleshoot problems."
+    failureMessage: "__Remediation__: Ensure that an `operations.md` file exists in your service's root directory or in the `docs` child directory and that metrics are documented under a heading which contains the word 'Metrics'."
+    expression: (git.fileExists("operations.md") and git.fileContents("operations.md").matches("(?im)^#{1,6}.*(Metrics)")) or (git.fileExists("docs/operations.md") and git.fileContents("docs/operations.md").matches("(?im)^#{1,6}.*(Metrics)"))
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: Secrets are loaded at runtime or as a file instead of environment variables.
+    description: "__Description__: Storing secrets in environment variables is not considered best practice as they may leak to child processes, observability tooling, etc. Additionally there is no means of auditing when and where they are used."
+    failureMessage: "__Remediation__: Ensure that `valueFrom.secretKeyRef` is not used in the `env` section of a container spec."
+    expression: jq(k8s.spec,"[.[].template.spec.containers[]?.env[]? | select(.valueFrom.secretKeyRef != null)] | length") = 0
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+      query: '!groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")'
+
+  - title: Runtime Images are pushed to ECR.
+    description: "__Description__: ECR is Rokt's standard image repository. Every service should have an image pushed to ECR from a Buildkite pipeline."
+    failureMessage: "__Remediation__: Ensure that an image is pushed to ECR using the [Rokt BK plugin](https://github.com/ROKT/docker-ecr-buildkite-plugin)."
+    expression: git.code_search(query = "docker-ecr-buildkite-plugin.git#v").count > 0 or git.code_search(query = "ecr#v").count > 0
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: Service is discoverable in Cortex with a meaningful description.
+    description: "__Description__: Clear description of services is important to facilitate communication and understanding of our service portfolio between teams."
+    failureMessage: "__Remediation__: Update the description in your service's Cortex YAML file to provide a brief summary of its purpose."
+    expression: '!description.matches("Please put a description here.") and description != null'
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: Service has a single team assigned as the owner that has been linked to in Cortex.
+    description: "__Description__: Having clear ownership enables effective communication, decision-making, and problem-solving, and ensures that services are aligned with business goals and priorities."
+    failureMessage: "__Remediation__: The `x-cortex-owners` in your service's [Cortex catalog descriptor file](https://docs.cortex.io/docs/reference/basics/entities#example-cortexyaml-for-service-entity) should match a group in rokt-organisation."
+    expression: 'owners.length = 1 and owners.all((x) => x.type = "GROUP")'
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: Service owner has been defined in ROKT/rokt-organisation as a group.
+    description: "__Description__: Having valid ownership from a single source of truth i.e. Rokt Organisation for groups enables effective and efficient communication, decision-making, and problem-solving, and ensures that services are aligned with business goals and priorities."
+    failureMessage: "__Remediation__: The `x-cortex-owners` in your service's [Cortex catalog descriptor file](https://docs.cortex.io/docs/reference/basics/entities#example-cortexyaml-for-service-entity) should match a yaml file reperesenting a group in rokt-organisation under [config/groups.](https://github.com/ROKT/rokt-organisation/tree/master/config/groups)"
+    expression: owners.all((owner) => git("github:ROKT/rokt-organisation").fileExists("config/groups/" + owner.name + ".yaml"))
+    weight: 1
+    level: Beginner
+    filter:
+      category: SERVICE
+
+  - title: The Service Tier has been specified in Cortex.
+    description: "__Description__: A service should be associated to exactly one service tier group."
+    failureMessage: "__Remediation__: Add exactly one service tier group to your service cortex yaml file. [Documentation](https://docs.google.com/document/d/1Evj5J0-sK9FxpoVsAsNAxBEQ3QI_mlK6-ulcfs_XPnw/edit#heading=h.638vx6z5rclv)"
+    expression: groups.filter((group) => group.name.matches("servicetier-[1-4]")).length=1
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: The Service should be able to scale to support change in traffic without manual intervention.
+    description: "__Description__: Having an HPA or KEDA configuration helps ensure high availability together with effective resource utilization and cost optimization."
+    failureMessage: "__Remediation__: Configure HPA or KEDA on your service's Helm chart."
+    expression:
+      'git("github:" + entity_descriptor.info.x-cortex-git.github.repository).code_search(query="kind: ScaledObject",
+      file_extension="yaml").length > 0 OR git("github:" + entity_descriptor.info.x-cortex-git.github.repository).code_search(query="kind:
+      HorizontalPodAutoscaler", file_extension="yaml").length > 0'
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+      query: '!groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")'
+
+  - title: High level architectural design is defined in docs/architecture.md.
+    description: "__Description__: An architecture.md file should include a overview with a diagram and an overview of key system components."
+    failureMessage: "__Remediation__: Ensure that an `architecture.md` file exists in your service's root directory or in the `docs` child directory and that overview is documented under a heading which contains the word 'Overview' and architecture diagram is documented."
+    expression:
+      '(git.fileExists("architecture.md") and git.fileContents("architecture.md").length > 100 and git.fileContents("architecture.md").matches("(?im)^#{1,6}.*(Overview)") and (
+      git.fileContents("architecture.md").matches("(?im)diagram") or git.fileContents("architecture.md").matches("(?im)mermaid") or git.fileContents("architecture.md").matches("\[([^\[]+)\](\((http(s?):).*excalidraw.*\))") or git.fileContents("architecture.md").matches("\[([^\[]+)\](\(.*\.(?:jpg|gif|png)\))"))) or
+      (git.fileExists("docs/architecture.md") and git.fileContents("docs/architecture.md").length > 100 and git.fileContents("docs/architecture.md").matches("(?im)^#{1,6}.*(Overview)") and (
+      git.fileContents("docs/architecture.md").matches("(?im)diagram") or git.fileContents("docs/architecture.md").matches("(?im)mermaid") or git.fileContents("architecture.md").matches("\[([^\[]+)\](\((http(s?):).*excalidraw.*\))") or git.fileContents("architecture.md").matches("\[([^\[]+)\](\(.*\.(?:jpg|gif|png)\))")))'
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: The Service is able to self-heal in the case of an instance or zone failure.
+    description:
+      "__Description__: A replica count of 2 or more is important for high availability and fault tolerance, ensuring that multiple instances of the application are available to handle traffic and handle failures.
+      Setting a spread constraint in Kubernetes is instrumental for enhancing fault tolerance and load distribution, as it promotes the even dispersion of workloads across nodes or zones, thus reducing the impact of potential failures and ensuring a more resilient system."
+    failureMessage: "__Remediation__: Add a replica count of 2 or more to your service's Helm chart. [Documentation](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/). Moreover, set a topologySpreadConstraints for your container definition, see [Documentation](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/)"
+    expression: jq(k8s.spec, ".[].replicas") > 1 and jq(k8s.spec,".[].template.spec.topologySpreadConstraints") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.spec.topologySpreadConstraints") != null
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+      query: '!groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")'
+
+  - title: Software dependencies are updated regularly, use an acceptable licence and not out of support.
+    description: "__Description__: By keeping dependencies up to date, developers can take advantage of new features, bug fixes, and security patches, and they can reduce their exposure to security vulnerabilities"
+    failureMessage: "__Remediation__: Enable Synk for your service and make sure that there are no critical issues."
+    expression: snyk.issues(severity=["CRITICAL"], fixability=["FIXABLE"]) <= 0
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: Unit tests are implemented and code coverage changes are surfaced in PRs.
+    description: "__Description__: Unit tests help detect early flaws in code and code coverage ensures that ample code is covered by the unit tests."
+    failureMessage: "__Remediation__: Add Unit tests in your code and use the [test-summary-buildkite-plugin](https://github.com/ROKT/test-summary-buildkite-plugin.git) to enable codecov in your service."
+    expression: datadog.metrics(query="rokt.code_qualtity.coverage{target_service:" + datadog.serviceNames().join(" OR target_service:") + "}",lookback=duration("P4W")).average_by((point) => point.metricValue) > 0
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: Linters and other static analysis tools are used before pushing commits to catch potential bugs.
+    description: "__Description__: Linters and other static analysis tools are used before pushing commits to catch potential bugs, programming errors, style issue, etc."
+    failureMessage: "__Remediation__: Enable trunk-check-pre-push-always in .trunk/trunk.yaml in your repo with the command `trunk actions enable trunk-check-pre-push-always`."
+    expression: git.fileExists(".trunk/trunk.yaml") and git.fileContents(".trunk/trunk.yaml").matches("trunk-check-pre-push-always")
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: Infrastructure is managed by Infrastructure as Code (IaC).
+    description: "__Description__: IaC lessens the risk of errors that can happen while manually configuring resources. It's simpler to deploy, manage, and upgrade infrastructure."
+    failureMessage: "__Remediation__: Use Terraform or CloudFormation to deploy infrastructure and keep the files under infra/*cfn* or infra/*terraform* folder."
+    expression: git.fileExists("infra/*cfn*/*") or git.fileExists("infra/*terraform*/*")
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: When operating in a kubernetes cluster a disruption budget has been defined that allows disruption.
+    description: "__Description__: A Pod Disruption Budget (PDB) is important for ensuring high availability and preventing service disruption by limiting the number of Pods that can be unavailable during maintenance or upgrades."
+    failureMessage: "__Remediation__: Configure a PDB in your service's Helm chart."
+    expression:
+      'git("github:" + entity_descriptor.info.x-cortex-git.github.repository).code_search(query="kind: PodDisruptionBudget",
+      file_extension="yaml").length > 0'
+    weight: 1
+    level: Bronze
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - title: Regional failover to the designated backup region is documented in docs/runbooks/regional-failover.md.
+    description: "__Description__: IaC lessens the risk of errors that can happen while manually configuring resources. It's simpler to deploy, manage, and upgrade infrastructure."
+    failureMessage: "__Remediation__: Use Terraform or CloudFormation to deploy infrastructure and keep the files under infra/*cfn* or infra/*terraform* folder."
+    expression: git.fileExists("docs/runbooks/regional-failover.md") and git.fileContents("docs/runbooks/regional-failover.md").length > 100
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: Restoration of data store backups is documented in docs/runbooks/db-recovery.md.
+    description: "__Description__: IaC lessens the risk of errors that can happen while manually configuring resources. It's simpler to deploy, manage, and upgrade infrastructure."
+    failureMessage: "__Remediation__: Use Terraform or CloudFormation to deploy infrastructure and keep the files under infra/*cfn* or infra/*terraform* folder."
+    expression: git.fileExists("docs/runbooks/db-recovery.md") and git.fileContents("docs/runbooks/db-recovery.md").length > 100
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: Formatters are configured and used before committing to ensure consistent formatting across all contributors.
+    description: "__Description__: Automatic formatting enables higher code quality, as the code is easier to read and understand if it follows a standard formatting."
+    failureMessage: "__Remediation__: Enable trunk-fmt-pre-commit in .trunk/trunk.yaml in your repo with the command `trunk actions enable trunk-fmt-pre-commit`."
+    expression: git.fileExists(".trunk/trunk.yaml") and git.fileContents(".trunk/trunk.yaml").matches("trunk-fmt-pre-commit")
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: All changes for the default branch must be made via a pull request.
+    description: "__Description__: Pull requests provide an opportunity for code review so that changes are merged into master after appropriate checks and balances."
+    failureMessage: "__Remediation__: Enable pull requests for your repository in the branch protection rules."
+    expression: git.branch_protection().reviews_required
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: Pull requests require at least one approval from each CODEOWNER excluding the author before merging.
+    description: "__Description__: Approvals should come from the CODEOWNER for a repository as they have expertise on a specific codebase."
+    failureMessage: "__Remediation__: Enable the reviews required from code owners checkbox in branch protection rules and set the required number of approvals before merging to atleast 1."
+    expression: git.branch_protection().code_owner_reviews_required and git.numRequiredApprovals >= 1
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: All pull requests use a template that requires the reason for the change, a summary of the changes, summary of how it has been tested and a checklist for the author to complete.
+    description: "__Description__: Template is an effective way to have consistent information for each pull request and it makes it easier to fill the pull request information."
+    failureMessage: "__Remediation__: Add a template.md file in .github/*template*.md with a set template to be filled for each pull request."
+    expression: git.fileExists(".github/*template*.md")
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: Over the last 4 weeks, test coverage was 60% or greater.
+    description: "__Description__: Code coverage ensures that ample code is covered by the unit tests to detect early code flaws and errors."
+    failureMessage: "__Remediation__: Make sure that atleast 60% of the code is covered by unit tests."
+    expression: datadog.metrics(query="rokt.code_qualtity.coverage{target_service:" + datadog.serviceNames().join(" OR target_service:") + "}",lookback=duration("P4W")).average_by((point) => point.metricValue) > 60
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+  - title: Runtimes use read-only file volumes.
+    description: "__Description__: Having runtime volumes as read only enhances security by reducing the risk of unauthorized changes or tampering with critical files during runtime."
+    failureMessage: "__Remediation__: Make sure that the volumes attatched to pods are read only."
+    expression: k8s = null or jq(k8s.spec,".[].template.spec.containers[] | try .volumeMounts | not") or jq(k8s.spec,"[.[].template.spec.containers[].volumeMounts | .[]? | select(.readOnly|not)] | length") = 0
+    weight: 1
+    level: Bronze
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - title: At least 2 SLOs are defined in docs/slos.md with links to Datadog.
+    description: "__Description__: SLOs are a key to making data-driven decisions about reliability, and prioritization of work."
+    failureMessage:
+      "__Remediation__: Define SLOs in slos.md file and follow a set [template](https://gist.github.com/dawshiek/e848a1d4f5593c2638690e397f0d136d). Make sure you have atleast two slos defined, Availability and Latency for Request/Response services,
+      and Throughput/Freshness for Data Processing services"
+    expression:
+      (git.fileExists("slos.md") and git.fileContents("slos.md").length > 100 and git.fileContents("slos.md").matches("\[([^\[]+)\](\((http(s?):).*rokt\.datadoghq\.com\/slo.*\))") and
+      ((git.fileContents("slos.md").matches("(?im)|Availability|") and git.fileContents("slos.md").matches("(?im)||Latency||")) or (git.fileContents("slos.md").matches("(?im)|Throughput|") and git.fileContents("slos.md").matches("(?im)||Freshness||")))) or
+      (git.fileExists("docs/slos.md") and git.fileContents("docs/slos.md").length > 100 and git.fileContents("docs/slos.md").matches("\[([^\[]+)\](\((http(s?):).*rokt\.datadoghq\.com\/slo.*\))") and
+      ((git.fileContents("docs/slos.md").matches("(?im)|Availability|") and git.fileContents("docs/slos.md").matches("(?im)||Latency||")) or (git.fileContents("docs/slos.md").matches("(?im)|Throughput|") and git.fileContents("docs/slos.md").matches("(?im)||Freshness||"))))
+    weight: 1
+    level: Bronze
+    filter:
+      category: SERVICE
+
+filter:
+  category: SERVICE

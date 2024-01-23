@@ -1,0 +1,16 @@
+{
+    // NOTE: this file is generated to quickly bootstrap Deploy Kit completions for your service.
+    // As the paths are are based on your local setup, it recommended that these settings
+    // are moved to your VSCode user settings and not committed to source control.
+    // Do this by:
+    // 1. Cmd + Shift + P -> "Preferences: Open Settings (JSON)"
+    // 2. Cut and paste the contents of this file into the JSON file that opens.
+    // 3. Delete this file from your service repository.
+    "yaml.schemas": {
+        "file:/Users/nick/.config/deploy-kit/schema/jsonschema/deploy-kit.json": [
+            "**/infra/deploy-kit/*.y*ml"
+        ],
+    },
+    "yaml.validate": true,
+    "yaml.completion": true,
+}

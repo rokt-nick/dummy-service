@@ -1,0 +1,31 @@
+openapi: 3.0.0
+info:
+  title: "Cortex"
+  x-cortex-tag: "cortex"
+  x-cortex-type: service
+  description: |
+    Service Catalog
+  x-cortex-git:
+    github:
+      repository: "ROKT/cortex"
+  x-cortex-owners:
+    - type: group
+      name: sre
+      provider: CORTEX
+
+  # this is effectively a list of tags used to filter services in the UI
+  # currently our only use-case is for filtering services by primary language
+  x-cortex-groups:
+    - "serviceGroup-cortex"
+
+  # each service should have an OpsGenie schedule
+  x-cortex-oncall:
+    opsgenie:
+      type: SCHEDULE
+      id: "SRE_schedule"
+
+  x-cortex-ci-cd:
+    buildkite:
+      pipelines:
+        - slug: cortex-master
+        - slug: cortex-deploy

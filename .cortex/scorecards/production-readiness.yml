@@ -1,0 +1,383 @@
+description: Assesses a service's readiness to receive production traffic based on Rokt's gold standard.
+name: Production Readiness
+rules:
+  - description: "__Description__: An on-call schedule is important for a production service to ensure that there is always someone available to respond to incidents and maintain service availability, improving reliability and minimizing downtime."
+    expression: oncall != null
+    failureMessage: "__Remediation__: Ensure your Cortex service descriptor includes a [reference to an Opsgenie schedule](https://docs.cortex.io/docs/reference/integrations/opsgenie#registration)."
+    level: Gold
+    title: Has on-call schedule
+    weight: 1
+  - description: "__Description__: All Rokt services should leverage Istio for enhanced traffic management, security, and observability."
+    expression: 'git("github:" + entity_descriptor.info.x-cortex-git.github.repository).code_search(query="kind: VirtualService", in_file = true, file_extension="yaml").length > 0'
+    failureMessage: "__Remediation__: Add an Istio VirtualService resource to your service's Helm chart."
+    level: Bronze
+    title: Istio is enabled
+    weight: 1
+  - description: "__Description__: Every service should have a pipeline to ensure that code changes are tested, validated, and deployed in a controlled manner. Pipelines should be stored in a consistent location."
+    expression: git.fileExists(".buildkite/*") OR git("github:" +
+      entity_descriptor.info.x-cortex-git.github.repository).fileExists(".buildkite/*")
+    failureMessage: "__Remediation__: Add Buildkite pipeline definitions at the repository or service root directory."
+    level: Bronze
+    title: Has .buildkite directory
+    weight: 1
+  - description: "__Description__: Documented runbooks are important for a production service to provide clear and consistent guidelines for incident response, reducing response time and improving the quality of incident resolution."
+    expression: git.code_search(query = "docs/runbooks/", in_path=true).count > 0
+    failureMessage: "__Remediation__: Add runbooks to the `docs/runbooks` directory. Start with a `README` file if your service doesn't have any runbooks yet."
+    level: Diamond
+    title: Has a runbooks directory
+    weight: 1
+  - description: "__Description__: GitHub is Rokt's chosen source code repository; all services should be added to the ROKT organisation in GitHub."
+    expression: git != null
+    failureMessage: "__Remediation__: Add your service to GitHub in the ROKT organisation."
+    level: Bronze
+    title: Repo is in git
+    weight: 1
+  - description: "__Description__: A readme document helps orient people in a GitHub repository and can provide helpful links to further documentation and resources."
+    expression: >-
+      git.fileExists("README.md") OR git.fileExists("docs/README.md")
+    failureMessage: "__Remediation__: Add a README file to your service's root directory or in the `docs` child directory."
+    level: Bronze
+    title: Has a readme file
+    weight: 1
+  - description: "__Description__: A development.md file helps to provide an overview of how to develop the service including information on dependencies, environment setup, running test and linting, common issues, etc."
+    expression: git.fileExists("development.md") OR git.fileExists("docs/development.md")
+    failureMessage: "__Remediation__: Add a `development.md` file to your service's root directory or in the `docs` child directory."
+    level: Silver
+    title: Has a development.md doc
+    weight: 1
+  - description: "__Description__: An architecture.md file should include a summary with a diagram and an overview of key system components."
+    expression: git.fileExists("architecture.md") OR git.fileExists("docs/architecture.md")
+    failureMessage: "__Remediation__: Add an `architecture.md` file to your service's root directory or in the `docs` child directory."
+    level: Silver
+    title: Has an architecture.md doc
+    weight: 1
+  - description: "__Description__: An operations.md file should provide links to dashboards and monitors, a description of custom metrics emitted and any relevant notes on operation of the service."
+    expression: git.fileExists("operations.md") OR git.fileExists("docs/operations.md")
+    failureMessage: "__Remediation__: Add an `operations.md` file to your service's root directory or in the `docs` child directory."
+    level: Silver
+    title: Has an operations.md doc
+    weight: 1
+  - description: "__Description__: An .editorconfig file in a repository helps to ensure consistent code formatting and style across different editors and IDEs, facilitating collaboration and reducing potential errors or conflicts."
+    expression: >-
+      git("github:" + entity_descriptor.info.x-cortex-git.github.repository).fileExists("**.editorconfig")
+    failureMessage: "__Remediation__: Add a `.editorconfig` file to the repository or service root directory."
+    level: Bronze
+    title: .editorconfig file exists
+    weight: 1
+  - description: "__Description__: A .dockerignore file is important for a Dockerfile to prevent unnecessary or sensitive files from being included in a Docker image, reducing the image size and improving security."
+    expression: >-
+      git("github:" + entity_descriptor.info.x-cortex-git.github.repository).fileExists("**.dockerignore")
+    failureMessage: "__Remediation__: Ensure every `Dockerfile` has a corresponding `.dockerignore` file."
+    level: Bronze
+    title: .dockerignore file exists
+    weight: 1
+  - description: "__Description__: Requiring review by CODEOWNERS is important for ensuring that changes to the most critical branch of a repository are reviewed and approved by the appropriate individuals or teams before being merged."
+    expression: git.branch_protection(). code_owner_reviews_required
+    failureMessage: "__Remediation__: Configure your GitHub repository per the [documented best practice](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/2089451744/Best+Practices+For+GitHub+Repository+Configurations)."
+    level: Bronze
+    title: Pull requests require a Codeowner review
+    weight: 1
+
+  - description: "__Description__: The `env` label enables us to identify the environment to which the resource belongs and is required by Datadog for Unified Service Tagging."
+    expression: k8s.metadata.has_label("env") and (jq(k8s.spec, ".[].template.metadata.labels.env") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels.env") != null)
+    failureMessage: "__Remediation__: Add the `env` label to Kubernetes resources definitions, see [Documentation](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/1268416987/Tags+Labels)"
+    level: Silver
+    title: Has required `env` labels
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: The `service` label enables us to match a resource to its service and is required by Datadog for Unified Service Tagging."
+    expression: k8s.metadata.has_label("service") and (jq(k8s.spec, ".[].template.metadata.labels.service") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels.service") != null)
+    failureMessage: "__Remediation__: Add the `service` label to Kubernetes resources definitions, see [Documentation](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/1268416987/Tags+Labels)"
+    level: Bronze
+    title: Has required `service` labels
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: The `team` label enables us to identify the owners of a resource."
+    expression: k8s.metadata.has_label("team") and (jq(k8s.spec, ".[].template.metadata.labels.team") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels.team") != null)
+    failureMessage: "__Remediation__: Add the `team` label to Kubernetes resources definitions, see [Documentation](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/1268416987/Tags+Labels)"
+    level: Bronze
+    title: Has required `team` labels
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: The `service-group` enables us to match a resource to its service group."
+    expression: k8s.metadata.has_label("service-group") and (jq(k8s.spec, ".[].template.metadata.labels[\"service-group\"]") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels[\"service-group\"]") != null)
+    failureMessage: "__Remediation__: Add the `service-group` to Kubernetes resources definitions, see [Documentation](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/1268416987/Tags+Labels)"
+    level: Bronze
+    title: Has required `service-group` labels
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: The `app` label is required by Istio for added context on metrics and traces."
+    expression: k8s.metadata.has_label("app") and (jq(k8s.spec, ".[].template.metadata.labels.app") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels.app") != null)
+    failureMessage: "__Remediation__: Add the `app` label to Kubernetes resources definitions, see [Documentation](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/1268416987/Tags+Labels)"
+    level: Bronze
+    title: Has required `app` labels
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: The `version` label is recommended by Istio and is required by Datadog for Unified Service Tagging."
+    expression: k8s.metadata.has_label("version") and (jq(k8s.spec, ".[].template.metadata.labels.version") != null OR jq(k8s.spec, ".[]?.jobTemplate?.spec.template.metadata.labels.version") != null)
+    failureMessage: "__Remediation__: Add the `version` label to Kubernetes resources definitions, see [Documentation](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/1268416987/Tags+Labels)"
+    level: Bronze
+    title: Has required `version` labels
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: Setting a CPU request in Kubernetes is essential for efficiently allocating resources, as it ensures optimal performance by preventing resource contention and maintaining stability across multiple containers within the cluster."
+    expression: jq(k8s.spec,
+      ".[].template.spec.containers[].resources.requests.cpu") != null OR
+      jq(k8s.spec, ".[]?.jobTemplate?.spec.template.spec.containers[]?.resources.requests.cpu") != null
+    failureMessage: "__Remediation__: Set a CPU request for your container definition, see [Documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container)"
+    level: Bronze
+    title: Has a K8s CPU request
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: Setting a minimum memory request guarantees a baseline allocation of memory resources, minimizing the risk of out-of-memory errors and providing a consistent environment for containerized applications."
+    expression: jq(k8s.spec,
+      ".[].template.spec.containers[].resources.requests.memory") != null OR
+      jq(k8s.spec, ".[]?.jobTemplate?.spec.template.spec.containers[]?.resources.requests.memory") != null
+    failureMessage: "__Remediation__: Set a memory request for your container definition, see [Documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container)"
+    level: Bronze
+    title: K8s container resource has a memory request
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: Setting a maximum memory limit in Kubernetes is vital for maintaining control over resource usage, as it prevents excessive memory consumption by individual containers, ensuring fair distribution of resources across the cluster, and protecting other applications from being starved or experiencing performance degradation."
+    expression: jq(k8s.spec,
+      ".[].template.spec.containers[].resources.limits.memory") != null OR
+      jq(k8s.spec, ".[]?.jobTemplate?.spec.template.spec.containers[]?.resources.limits.memory") != null
+    failureMessage: "__Remediation__: Set a memory limit for your container definition, see [Documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container)"
+    level: Bronze
+    title: K8s container resource has a memory limit
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: Opting not to set a CPU limit in Kubernetes allows for maximal resource utilization and performance flexibility, especially beneficial for CPU-intensive tasks or applications with variable loads."
+    expression: (jq(k8s.spec, ".[].template.spec.containers") != null and  jq(k8s.spec, ".[].template.spec.containers[].resources.limits.cpu") = null) and ((jq(k8s.spec, ".[]?.jobTemplate?.spec.template.spec")=null) or (jq(k8s.spec, ".[]?.jobTemplate?.spec.template.spec.containers") != null and jq(k8s.spec, ".[]?.jobTemplate?.spec.template.spec.containers[]?.resources.limits.cpu") = null))
+    failureMessage: "__Remediation__: Remove the CPU limit for your container definition, see [Documentation](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container)"
+    level: Silver
+    title: Has no CPU limit in k8s
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: Setting a spread constraint in Kubernetes is instrumental for enhancing fault tolerance and load distribution, as it promotes the even dispersion of workloads across nodes or zones, thus reducing the impact of potential failures and ensuring a more resilient system."
+    expression: jq(k8s.spec,
+      ".[].template.spec.topologySpreadConstraints") != null OR
+      jq(k8s.spec, ".[]?.jobTemplate?.spec.template.spec.topologySpreadConstraints") != null
+    failureMessage: "__Remediation__: Set a topologySpreadConstraints for your container definition, see [Documentation](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/)"
+    level: Bronze
+    title: K8s TopologySpreadConstraint specified
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: Setting a livenessProbe in Kubernetes is key to maintaining the availability and reliability of containerized applications, as it actively monitors the health of running containers, allowing the system to automatically restart any unresponsive or malfunctioning instances."
+    expression: jq(k8s.spec, ".[].template.spec.containers[].livenessProbe") != null
+    failureMessage: "__Remediation__: Set a livenessProbe for your container definition, see [Documentation](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)"
+    level: Silver
+    title: Container has a livenessProbe set
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: Setting a readinessProbe ensures that pods are only added to the service's load balancer once they are fully ready to handle incoming traffic."
+    expression: jq(k8s.spec, ".[].template.spec.containers[].readinessProbe") != null
+    failureMessage: "__Remediation__: Set a readinessProbe for your container definition, see [Documentation](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)"
+    level: Silver
+    title: Container has a readinessProbe set
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: Snyk is a tool that finds and fixes vulnerabilities in your container images and Kubernetes applications"
+    expression: snyk != null
+    failureMessage: "__Remediation__: Enable Snyk for your repositories via rokt-organisation, see [Documentation](https://github.com/ROKT/rokt-organisation/blob/master/docs/external-applications/snyk.md)"
+    level: Bronze
+    title: Has Snyk enabled
+    weight: 1
+
+  - description: "__Description__: Having an HPA or KEDA configuration helps ensure high availability together with effective resource utilization and cost optimization."
+    expression:
+      'git("github:" + entity_descriptor.info.x-cortex-git.github.repository).code_search(query="kind: ScaledObject",
+      file_extension="yaml").length > 0 OR git("github:" + entity_descriptor.info.x-cortex-git.github.repository).code_search(query="kind:
+      HorizontalPodAutoscaler", file_extension="yaml").length > 0'
+    failureMessage: "__Remediation__: Configure HPA or KEDA on your service's Helm chart."
+    level: Bronze
+    title: Uses Horizontal Pod Scaling or Kubernetes Event-driven Autoscaling
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: A Pod Disruption Budget (PDB) is important for ensuring high availability and preventing service disruption by limiting the number of Pods that can be unavailable during maintenance or upgrades."
+    expression:
+      'git("github:" + entity_descriptor.info.x-cortex-git.github.repository).code_search(query="kind: PodDisruptionBudget",
+      file_extension="yaml").length > 0'
+    failureMessage: "__Remediation__: Configure a PDB in your service's Helm chart."
+    level: Bronze
+    title: Has a Pod Disruption Budget (PDB) configured
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: A canary rollout strategy reduces the risk of potential issues and enables early detection of problems before full-scale deployment."
+    expression: jq(k8s.spec, ".[].strategy.canary") != null
+    failureMessage: "__Remediation__: Configure your service's Argo rollout to use the `canary` strategy."
+    level: Gold
+    title: Has a canary rollout strategy configured
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: Providing links to dashboards helps engineers to quickly check the status and health of the service."
+    expression: links("dashboard").count>= 1
+    failureMessage: "__Remediation__: Add at least one link with type `dashboard` in your service's [Cortex catalog descriptor file](https://docs.cortex.io/docs/reference/basics/entities#example-cortexyaml-for-service-entity)."
+    level: Gold
+    title: Has a Datadog dashboard link
+    weight: 1
+  - description: "__Description__: Having clear ownership enables effective communication, decision-making, and problem-solving, and ensures that services are aligned with business goals and priorities."
+    expression: owners.count > 0
+    failureMessage: "__Remediation__: The `x-cortex-owners` in your service's [Cortex catalog descriptor file](https://docs.cortex.io/docs/reference/basics/entities#example-cortexyaml-for-service-entity) should match a group configured in GitHub."
+    level: Bronze
+    title: Has at least one individual GitHub owner
+    weight: 1
+  - description: "__Description__: Providing links to build pipelines helps engineers to quickly check the status and health of any related builds."
+    expression: buildkite != null
+    failureMessage: "__Remediation__: Add at least one link with type `buildkite` in your service's [Cortex catalog descriptor file](https://docs.cortex.io/docs/reference/integrations/buildkite#catalog-descriptor)."
+    level: Bronze
+    title: Has a buildkite pipeline link
+    weight: 1
+  - description: "__Description__: Utilising a fast rollback plugin in the pipeline is crucial for safeguarding application continuity and minimizing downtime, as it enables rapid restoration of previous stable versions in case of deployment failures or unforeseen issues, ensuring a consistently high-quality user experience and reducing the potential negative impact on business operations."
+    expression:
+      git("github:" + entity_descriptor.info.x-cortex-git.github.repository).code_search(query =
+      "ssh://git@github.com/ROKT/fast-rollback-buildkite-plugin.git", in_file =
+      true).length > 0
+    failureMessage: "__Remediation__: Add fast rollback plugin to your pipeline, see [https://github.com/ROKT/fast-rollback-buildkite-plugin](https://github.com/ROKT/fast-rollback-buildkite-plugin)"
+    level: Gold
+    title: Use buildkite fast rollback plugin
+    weight: 1
+  - description: "__Description__: Utilising a deployment status plugin in the pipeline maintains visibility and control over the deployment process, as it provides real-time insights into the progress and health of each deployment, allowing for prompt identification and resolution of any issues, contributing to a more robust and efficient application lifecycle."
+    expression:
+      git("github:" + entity_descriptor.info.x-cortex-git.github.repository).code_search(query =
+      "ssh://git@github.com/ROKT/deployment-status-buildkite-plugin.git",
+      in_file = true).length > 0
+    failureMessage: "__Remediation__: Add deployment status plugin to your pipeline, see [https://github.com/ROKT/deployment-status-buildkite-plugin](https://github.com/ROKT/deployment-status-buildkite-plugin)"
+    level: Gold
+    title: Use deployment status Buildkite plugin
+    weight: 1
+  - description: "__Description__: Using 'latest' tag for dependencies in Dockerfiles is not recommended because it can lead to unpredictability and instability, as dependencies can change without warning and cause compatibility issues with the application."
+    expression: '!git.fileExists("*/Dockerfile") OR
+      git.code_search(query="\":latest\"", language="Dockerfile").length = 0'
+    failureMessage: "__Remediation__: Update your Dockerfile so that it depends on specific named image versions."
+    level: Silver
+    title: Does not use 'latest' tag in Dockerfile
+    weight: 1
+  - description: "__Description__: Incorporating Datadog monitors into your infrastructure is crucial for obtaining comprehensive visibility into system performance and health, as it enables real-time tracking of key metrics, alerts, and trends, empowering teams to proactively identify and resolve issues, optimize resources, and ultimately deliver a more reliable and high-performing service."
+    expression: datadog.monitors.count > 0
+    failureMessage: "__Remediation__: Setup Datadog monitors for your service, see [Documentation](https://docs.datadoghq.com/getting_started/monitors/)"
+    level: Gold
+    title: Has Datadog monitors
+    weight: 1
+  - description: "__Description__: A quantitative measurement of a service's performance or reliability. In Datadog SLOs, an SLI is a metric or an aggregation of one or more monitors."
+    expression: slos.count > 1
+    failureMessage: "__Remediation__: Add SLOs to your service, see [Documentation](https://docs.datadoghq.com/monitors/service_level_objectives/)"
+    level: Gold
+    title: Has at least two SLO's
+    weight: 1
+  - description: "__Description__: Maintaining SLO documentation within the repository is essential for promoting transparency and accountability, as it ensures easy access to performance targets and expectations for all team members, fostering a culture of shared responsibility and facilitating ongoing collaboration to achieve and maintain service reliability and end-user satisfaction."
+    expression: git.fileExists("slos.md") OR git.fileExists("docs/slos.md") OR git.fileExists("SLOs.md") OR git.fileExists("docs/SLOs.md")
+    failureMessage: "__Remediation__: Add SLO documentation to your repository, in either slos.md or docs/slos.md"
+    level: Gold
+    title: Has SLO documentation
+    weight: 1
+  - description: "__Description__: Clear description of services is important to facilitate communication, understanding, and collaboration between teams."
+    expression: '!description.matches("Please put a description here.") and description != null'
+    failureMessage: "__Remediation__: Update the description in your service's Cortex YAML file to provide a brief summary of its purpose."
+    level: Bronze
+    title: Cortex descriptor has a service description
+    weight: 1
+  - description: "__Description__: A Pull Request (PR) template is important for ensuring consistent and complete information is provided with each PR."
+    expression: 'git("github:" +
+      entity_descriptor.info.x-cortex-git.github.repository).fileExists(".github/pull_request_template.md")
+      OR git("github:" +
+      entity_descriptor.info.x-cortex-git.github.repository).fileExists(".github/PULL_REQUEST_TEMPLATE/*")
+      '
+    failureMessage: "__Remediation__: Add a PR template per [Rokt best practice GitHub repository configuration](https://rokt.atlassian.net/wiki/spaces/PLAT/pages/2089451744/Best+Practices+For+GitHub+Repository+Configurations#Setup-default-pull-request-template)."
+    level: Silver
+    title: Has a PR template
+    weight: 1
+  - description: "__Description__: A `CODEOWNERS` file is important for for ensuring that changes are reviewed by the appropriate individuals or teams."
+    expression: git("github:" + entity_descriptor.info.x-cortex-git.github.repository).fileExists(".github/CODEOWNERS")
+    failureMessage: "__Remediation__: Add a `CODEOWNERS` file to the repository root directory."
+    level: Bronze
+    title: Github CODEOWNERS configured for repo
+    weight: 1
+
+  - description: "__Description__: A replica count of 2 more more is important for high availability and fault tolerance, ensuring that multiple instances of the application are available to handle traffic and handle failures."
+    expression: jq(k8s.spec, ".[].replicas") > 1
+    failureMessage: "__Remediation__: Add a replica count of 2 or more to your service's Helm chart. [Documentation](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/)"
+    level: Bronze
+    title: Replica count is 2 or more
+    weight: 1
+    filter:
+      query: >-
+        !groups.any((group) => group.name.matches("techstack.*")) or has_group("techstack-k8s")
+
+  - description: "__Description__: A service should be associated to a service tier group and it should only be one service tier group."
+    expression: groups.filter((group) => group.name.matches("servicetier-[1-4]")).length=1
+    failureMessage: "__Remediation__: Add exactly one service tier group to your service cortex yaml file. [Documentation](https://docs.google.com/document/d/1Evj5J0-sK9FxpoVsAsNAxBEQ3QI_mlK6-ulcfs_XPnw/edit#heading=h.638vx6z5rclv)"
+    level: Bronze
+    title: Service is assigned to exactly one service tier group.
+    weight: 1
+
+tag: production-readiness
+draft: false
+ladder:
+  levels:
+    - color: "#af6d30"
+      description: null
+      name: Bronze
+      rank: 1
+    - color: "#b6b6b6"
+      description: null
+      name: Silver
+      rank: 2
+    - color: "#f2cc00"
+      description: null
+      name: Gold
+      rank: 3
+    - color: "#e5eaee"
+      description: null
+      name: Diamond
+      rank: 4
+filter:
+  category: SERVICE
